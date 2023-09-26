@@ -6,6 +6,10 @@ ENV INSTALL_DIR="/opt"
 ENV PATH="/opt/bin:${PATH}" \
     LD_LIBRARY_PATH="${INSTALL_DIR}/lib64:${INSTALL_DIR}/lib"
 
+# Needed for test file, not sure why the compiler file did not get it in.
+RUN set -xe; \
+    yum -y install libicu60
+
 # Install zip
 
 RUN set -xe; \

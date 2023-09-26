@@ -24,14 +24,24 @@ WORKDIR /tmp
 RUN set -xe \
     && yum makecache \
     && yum groupinstall -y "Development Tools"  --setopt=group_package_types=mandatory,default \
-    && yum install -y python3-devel openssl-devel gcc10 gcc10-c++
+    && yum install -y python3-devel openssl-devel gcc10 gcc10-c++ \
+    && yum install -y glibc glibc-devel glib2
+
+# add imaging & poppler dependencies
+
+RUN set -xe \
+    && yum install -y jbigkit-libs zlib zlib-devel \
+    && yum install -y harfbuzz harfbuzz-devel \
+    && yum install -y graphite2 \
+    && yum install -y libicu60 \
+    && yum install -y poppler 
 
 # Install CMake
 
 RUN  set -xe \
     && mkdir -p /tmp/cmake \
     && cd /tmp/cmake \
-    && curl -Ls  https://cmake.org/files/v3.26/cmake-3.26.4.tar.gz \
+    && curl -Ls  https://cmake.org/files/v3.27/cmake-3.27.5.tar.gz \
     | tar xzC /tmp/cmake --strip-components=1 \
     && sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake \
     && ./bootstrap \
@@ -39,7 +49,7 @@ RUN  set -xe \
     --no-system-jsoncpp \
     --no-system-librhash \
     --no-system-curl \
-    && make \
+    && make -j8 \
     && make install
 
 # Install GObject Introspection
@@ -47,7 +57,7 @@ RUN  set -xe \
 RUN  set -xe \
     && mkdir -p /tmp/gobject-introspection \
     && cd /tmp/gobject-introspection \
-    && curl -Ls  https://download.gnome.org/sources/gobject-introspection/1.76/gobject-introspection-1.76.1.tar.xz \
+    && curl -Ls  https://download.gnome.org/sources/gobject-introspection/1.78/gobject-introspection-1.78.1.tar.xz \
     | tar xJvC /tmp/gobject-introspection --strip-components=1 \
     && mkdir build \
     && cd build \
@@ -64,7 +74,7 @@ RUN  set -xe \
 RUN set -xe \
     && mkdir -p /tmp/boost \
     && cd /tmp/boost \
-    && curl -Ls https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz \
+    && curl -Ls https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.gz \
     | tar xzC /tmp/boost --strip-components=1 \
     && sed -i '/#include.*phoenix.*tuple.hpp.*/d' boost/phoenix/stl.hpp \
     && ./bootstrap.sh \
@@ -87,7 +97,7 @@ RUN set -xe \
     && curl -Ls  https://www.nasm.us/pub/nasm/releasebuilds/${VERSION_NASM}/nasm-${VERSION_NASM}.tar.xz \
     | tar xJvC /tmp/nasm --strip-components=1 \
     && ./configure --prefix=/usr/local \
-    && make \
+    && make -j8\
     && make install
 
 # Configure Default Compiler Variables
@@ -129,12 +139,12 @@ RUN set -xe; \
     --without-python
 
 RUN set -xe; \
-    make install \
+    make install -j8\
     && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
 
 # Install FreeType2 (https://github.com/aseprite/freetype2/releases)
 
-ENV VERSION_FREETYPE2=2.13.0
+ENV VERSION_FREETYPE2=2.13.2
 ENV FREETYPE2_BUILD_DIR=${BUILD_DIR}/freetype2
 
 RUN set -xe; \
@@ -162,7 +172,7 @@ RUN set -xe; \
     --with-sysroot=${INSTALL_DIR} \
     --enable-freetype-config  \
     --disable-static \
-    && make \
+    && make  -j8 \
     && make install
 
 # Install gperf
@@ -185,7 +195,7 @@ RUN set -xe; \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure  \
     --prefix=${INSTALL_DIR} \
-    && make \
+    && make  -j8\
     && make install
 
 # Install Fontconfig (https://github.com/freedesktop/fontconfig/releases)
@@ -216,12 +226,12 @@ RUN set -xe; \
     --prefix=${INSTALL_DIR} \
     --disable-docs \
     --enable-libxml2 \
-    && make \
+    && make  -j8 \
     && make install
 
 # Install Libjpeg-Turbo (https://github.com/libjpeg-turbo/libjpeg-turbo/releases)
 
-ENV VERSION_LIBJPEG=2.1.5.1
+ENV VERSION_LIBJPEG=3.0.0
 ENV LIBJPEG_BUILD_DIR=${BUILD_DIR}/libjpeg
 
 RUN set -xe; \
@@ -243,7 +253,7 @@ RUN set -xe; \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
     -DCMAKE_INSTALL_DEFAULT_LIBDIR=lib \
     -DCMAKE_PREFIX_PATH=${INSTALL_DIR} \
-    && make \
+    && make -j8 \
     && make install
 
 # Install OpenJPEG (https://github.com/uclouvain/openjpeg/releases)
@@ -269,12 +279,12 @@ RUN set -xe; \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
     -DBUILD_STATIC_LIBS=OFF \
     -DCMAKE_PREFIX_PATH=${INSTALL_DIR} \
-    && make \
+    && make -j8  \
     && make install
 
 # Install Libpng (https://github.com/glennrp/libpng/releases)
 
-ENV VERSION_LIBPNG=1.6.39
+ENV VERSION_LIBPNG=1.6.40
 ENV LIBPNG_BUILD_DIR=${BUILD_DIR}/libpng
 
 RUN set -xe; \
@@ -293,12 +303,12 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make \
+    && make -j8 \
     && make install
 
 # Install LibTIFF (http://download.osgeo.org/libtiff)
 
-ENV VERSION_LIBTIFF=4.5.1
+ENV VERSION_LIBTIFF=4.6.0
 ENV LIBTIFF_BUILD_DIR=${BUILD_DIR}/tiff
 
 RUN set -xe; \
@@ -317,7 +327,7 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make \
+    && make -j8 \
     && make install
 
 # Install Pixman (https://www.cairographics.org/releases)
@@ -344,7 +354,7 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make \
+    && make -j8 \
     && make install
 
 # Install Cairo (http://www.linuxfromscratch.org/blfs/view/svn/x/cairo.html)
@@ -369,8 +379,22 @@ RUN set -xe; \
     --prefix=${INSTALL_DIR} \
     --disable-static \
     --enable-tee \
-    && make \
+    && make -j8 \
     && make install
+
+# Install Brotli (https://github.com/google/brotli)
+
+ENV BROTLI_BUILD_DIR=${BUILD_DIR}/brotli
+
+RUN set -xe \
+    && mkdir -p ${BROTLI_BUILD_DIR} \
+    && cd ${BROTLI_BUILD_DIR} \
+    && curl -Ls https://github.com/google/brotli/archive/refs/tags/v1.1.0.tar.gz \
+    | tar xzC ${BROTLI_BUILD_DIR} \
+    && cd brotli-1.1.0 \
+    && mkdir out && cd out \
+    && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./installed .. \
+    && cmake --build . --config Release --target install
 
 # Install Little CMS (https://downloads.sourceforge.net/lcms)
 
@@ -393,18 +417,18 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make \
+    && make -j8 \
     && make install
 
 # Install Poppler (https://gitlab.freedesktop.org/poppler/poppler/-/tags)
 
-ENV VERSION_POPPLER=23.06.0
+ENV VERSION_POPPLER=23.09.0
 ENV POPPLER_BUILD_DIR=${BUILD_DIR}/poppler
 ENV POPPLER_TEST_DIR=${BUILD_DIR}/poppler-test
 
 RUN set -xe; \
-    mkdir -p ${POPPLER_TEST_DIR}; \
-    git clone git://git.freedesktop.org/git/poppler/test ${POPPLER_TEST_DIR}
+   mkdir -p ${POPPLER_TEST_DIR}; \
+   git clone git://git.freedesktop.org/git/poppler/test ${POPPLER_TEST_DIR}
 
 RUN set -xe; \
     mkdir -p ${POPPLER_BUILD_DIR}/bin; \
@@ -425,6 +449,6 @@ RUN set -xe; \
     -DCMAKE_PREFIX_PATH=${INSTALL_DIR} \
     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
     -DTESTDATADIR=${POPPLER_TEST_DIR} \
-    && make \
+    && make -j8 \
     && make install
 
