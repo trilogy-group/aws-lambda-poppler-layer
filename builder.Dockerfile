@@ -24,7 +24,21 @@ RUN set -xe; \
     ${INSTALL_DIR}/share \
     ${INSTALL_DIR}/lib
 
+# normal dependencies
 COPY --from=jeylabs/poppler/compiler:latest /lib64/libuuid.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libicu60.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libz.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libm.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libjbig.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libharfbuzz.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libgraphite2.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libbrotlidec.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libbrotlicommon.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libexpat.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libnss3.so.* ${INSTALL_DIR}/lib/
+COPY --from=jeylabs/poppler/compiler:latest /lib64/libcurl4.so.* ${INSTALL_DIR}/lib/
+
+# built from source
 COPY --from=jeylabs/poppler/compiler:latest ${SOURCE_DIR}/share/ /tmp/share
 COPY --from=jeylabs/poppler/compiler:latest ${SOURCE_DIR}/etc/ ${INSTALL_DIR}/etc/
 COPY --from=jeylabs/poppler/compiler:latest ${SOURCE_DIR}/bin/ ${INSTALL_DIR}/bin/
@@ -44,6 +58,9 @@ WORKDIR /tmp/test
 
 RUN set -xe; \
     curl -Ls https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf --output sample.pdf
+
+RUN set -xe; \
+    /opt/bin/pdftoppm -v
 
 RUN set -xe; \
     /opt/bin/pdftoppm -png sample.pdf sample

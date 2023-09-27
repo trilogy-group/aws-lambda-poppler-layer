@@ -30,15 +30,21 @@ RUN set -xe \
 # add imaging & poppler dependencies
 
 RUN set -xe \
-    && yum install -y jbigkit-libs zlib zlib-devel \
+    && yum install -y jbigkit-libs zlib zlib-devel zlib1g zlib1g-dev \
     && yum install -y harfbuzz harfbuzz-devel \
     && yum install -y graphite2 \
-    && yum install -y libicu60 \
+    && yum install -y libicu60 libcurl4 libcurl4-gnutls-dev libnss3-dev \
     && yum install -y poppler 
+
+# add imaging & poppler dependencies dev info
+
+RUN set -xe \
+    && yum install -y jbigkit-devel graphite2-devel libicu60-devel \
+    && yum install -y expat expat-devel
 
 # Install CMake
 
-RUN  set -xe \
+RUN set -xe \
     && mkdir -p /tmp/cmake \
     && cd /tmp/cmake \
     && curl -Ls  https://cmake.org/files/v3.27/cmake-3.27.5.tar.gz \
@@ -49,12 +55,12 @@ RUN  set -xe \
     --no-system-jsoncpp \
     --no-system-librhash \
     --no-system-curl \
-    && make -j8 \
+    && make -j 8 \
     && make install
 
 # Install GObject Introspection
 
-RUN  set -xe \
+RUN set -xe \
     && mkdir -p /tmp/gobject-introspection \
     && cd /tmp/gobject-introspection \
     && curl -Ls  https://download.gnome.org/sources/gobject-introspection/1.78/gobject-introspection-1.78.1.tar.xz \
@@ -63,7 +69,7 @@ RUN  set -xe \
     && cd build \
     && pip3 install ninja meson \
     && meson setup \
-    --prefix=/usr/local \
+    --prefix=${INSTALL_DIR} \
     --buildtype=release \
     .. \
     && ninja \
@@ -78,9 +84,9 @@ RUN set -xe \
     | tar xzC /tmp/boost --strip-components=1 \
     && sed -i '/#include.*phoenix.*tuple.hpp.*/d' boost/phoenix/stl.hpp \
     && ./bootstrap.sh \
-    --prefix=/usr/local \
+    --prefix=${INSTALL_DIR} \
     --with-python=python3 \
-    && ./b2 stage -j8 \
+    && ./b2 stage -j 8 \
     threading=multi \
     link=shared \
     && ./b2 install \
@@ -96,8 +102,8 @@ RUN set -xe \
     && cd /tmp/nasm \
     && curl -Ls  https://www.nasm.us/pub/nasm/releasebuilds/${VERSION_NASM}/nasm-${VERSION_NASM}.tar.xz \
     | tar xJvC /tmp/nasm --strip-components=1 \
-    && ./configure --prefix=/usr/local \
-    && make -j8\
+    && ./configure --prefix=${INSTALL_DIR} \
+    && make -j 8\
     && make install
 
 # Configure Default Compiler Variables
@@ -139,7 +145,7 @@ RUN set -xe; \
     --without-python
 
 RUN set -xe; \
-    make install -j8\
+    make install -j 8\
     && cp xml2-config ${INSTALL_DIR}/bin/xml2-config
 
 # Install FreeType2 (https://github.com/aseprite/freetype2/releases)
@@ -172,7 +178,7 @@ RUN set -xe; \
     --with-sysroot=${INSTALL_DIR} \
     --enable-freetype-config  \
     --disable-static \
-    && make  -j8 \
+    && make -j 8 \
     && make install
 
 # Install gperf
@@ -195,7 +201,7 @@ RUN set -xe; \
     LDFLAGS="-L${INSTALL_DIR}/lib64 -L${INSTALL_DIR}/lib" \
     ./configure  \
     --prefix=${INSTALL_DIR} \
-    && make  -j8\
+    && make -j 8\
     && make install
 
 # Install Fontconfig (https://github.com/freedesktop/fontconfig/releases)
@@ -226,7 +232,7 @@ RUN set -xe; \
     --prefix=${INSTALL_DIR} \
     --disable-docs \
     --enable-libxml2 \
-    && make  -j8 \
+    && make -j 8 \
     && make install
 
 # Install Libjpeg-Turbo (https://github.com/libjpeg-turbo/libjpeg-turbo/releases)
@@ -253,7 +259,7 @@ RUN set -xe; \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
     -DCMAKE_INSTALL_DEFAULT_LIBDIR=lib \
     -DCMAKE_PREFIX_PATH=${INSTALL_DIR} \
-    && make -j8 \
+    && make -j 8 \
     && make install
 
 # Install OpenJPEG (https://github.com/uclouvain/openjpeg/releases)
@@ -279,7 +285,7 @@ RUN set -xe; \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
     -DBUILD_STATIC_LIBS=OFF \
     -DCMAKE_PREFIX_PATH=${INSTALL_DIR} \
-    && make -j8  \
+    && make -j 8  \
     && make install
 
 # Install Libpng (https://github.com/glennrp/libpng/releases)
@@ -303,7 +309,7 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make -j8 \
+    && make -j 8 \
     && make install
 
 # Install LibTIFF (http://download.osgeo.org/libtiff)
@@ -327,7 +333,7 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make -j8 \
+    && make -j 8 \
     && make install
 
 # Install Pixman (https://www.cairographics.org/releases)
@@ -354,7 +360,7 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make -j8 \
+    && make -j 8 \
     && make install
 
 # Install Cairo (http://www.linuxfromscratch.org/blfs/view/svn/x/cairo.html)
@@ -379,7 +385,7 @@ RUN set -xe; \
     --prefix=${INSTALL_DIR} \
     --disable-static \
     --enable-tee \
-    && make -j8 \
+    && make -j 8 \
     && make install
 
 # Install Brotli (https://github.com/google/brotli)
@@ -393,7 +399,7 @@ RUN set -xe \
     | tar xzC ${BROTLI_BUILD_DIR} \
     && cd brotli-1.1.0 \
     && mkdir out && cd out \
-    && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./installed .. \
+    && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} .. \
     && cmake --build . --config Release --target install
 
 # Install Little CMS (https://downloads.sourceforge.net/lcms)
@@ -417,7 +423,7 @@ RUN set -xe; \
     ./configure  \
     --prefix=${INSTALL_DIR} \
     --disable-static \
-    && make -j8 \
+    && make -j 8 \
     && make install
 
 # Install Poppler (https://gitlab.freedesktop.org/poppler/poppler/-/tags)
@@ -449,6 +455,5 @@ RUN set -xe; \
     -DCMAKE_PREFIX_PATH=${INSTALL_DIR} \
     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
     -DTESTDATADIR=${POPPLER_TEST_DIR} \
-    && make -j8 \
+    && make -j 8 \
     && make install
-
