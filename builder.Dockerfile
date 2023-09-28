@@ -8,12 +8,12 @@ ENV PATH="/opt/bin:${PATH}" \
 
 # Needed for test file, not sure why the compiler file did not get it in.
 RUN set -xe; \
-    yum -y install libicu60
+    yum install -y libicu60
 
 # Install zip
 
 RUN set -xe; \
-    LD_LIBRARY_PATH= yum -y install zip
+    LD_LIBRARY_PATH= yum install -y zip
 
 # Copy All Binaries / Libaries
 
